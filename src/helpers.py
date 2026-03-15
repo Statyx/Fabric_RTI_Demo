@@ -168,7 +168,7 @@ def kusto_mgmt(query_service_uri: str, kusto_token: str,
     body = {"db": db_name, "csl": command}
     resp = requests.post(
         f"{query_service_uri}/v1/rest/mgmt",
-        headers=headers, json=body
+        headers=headers, json=body, timeout=60
     )
     resp.raise_for_status()
     return resp.json()
