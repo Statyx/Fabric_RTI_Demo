@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""
+Shared helpers for Fabric RTI Demo deployment scripts.
+Authentication, async polling, config loading.
+"""
+
+import base64
+import json
+import subprocess
+import sys
+import time
+import yaml
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+import requests
+
+SCRIPT_DIR = Path(__file__).parent
+CONFIG_FILE = SCRIPT_DIR / "config.yaml"
+STATE_FILE = SCRIPT_DIR / "state.json"
+
+
+def load_config() -> Dict[str, Any]:
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def load_state() -> Dict[str, Any]:
+    """Load deployment state (IDs created so far)."""
+    if STATE_FILE.exists():
+        with open(STATE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def save_state(state: Dict[str, Any]):
+    """Persist deployment state."""
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2)
+
+
+def get_fabric_token() -> str:
+    """Get Fabric API access token via Azure CLI."""
+    result = subprocess.check_output(
+        ["az", "account", "get-access-token",
+         "--resource", "https://api.fabric.microsoft.com",
+         "--query", "accessToken", "-o", "tsv"],
+        shell=True
+    )
+    return result.decode().strip()
+
+
+def get_kusto_token(query_service_uri: str) -> str:
+    """Get Kusto token, trying multiple scopes."""
+    scopes = [
+        query_service_uri,
+        "https://kusto.kusto.windows.net",
+        "https://help.kusto.windows.net",
+        "https://api.fabric.microsoft.com",
+    ]
+    for scope in scopes:
+        try:
+            result = subprocess.check_output(
+                ["az", "account", "get-access-token",
+                 "--resource", scope,
+                 "--query", "accessToken", "-o", "tsv"],
+                shell=True
+            )
+            token = result.decode().strip()
+            if token:
+                return token
+        except subprocess.CalledProcessError:
+            continue
+    raise RuntimeError("Could not acquire Kusto token with any scope")
+
+
+def fabric_headers(token: str) -> Dict[str, str]:
+    return {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
+
+def poll_operation(token: str, api_base: str, operation_id: str,
+                   max_wait: int = 120) -> Dict:
+    """Poll an async Fabric operation until completion."""
+    headers = fabric_headers(token)
+    for _ in range(max_wait // 5):
+        time.sleep(5)
+        resp = requests.get(f"{api_base}/operations/{operation_id}",
+                            headers=headers)
+        resp.raise_for_status()
+        op = resp.json()
+        status = op.get("status", "")
+        if status == "Succeeded":
+            return op
+        if status in ("Failed", "Cancelled"):
+            raise RuntimeError(f"Operation {status}: {op.get('error', {})}")
+    raise TimeoutError(f"Operation {operation_id} did not complete in {max_wait}s")
+
+
+def create_fabric_item(token: str, api_base: str, workspace_id: str,
+                       display_name: str, item_type: str,
+                       description: str = "",
+                       definition: Optional[Dict] = None) -> Dict:
+    """Create a Fabric item and poll until complete."""
+    headers = fabric_headers(token)
+    body: Dict[str, Any] = {
+        "displayName": display_name,
+        "type": item_type,
+    }
+    if description:
+        body["description"] = description
+    if definition:
+        body["definition"] = definition
+
+    resp = requests.post(
+        f"{api_base}/workspaces/{workspace_id}/items",
+        headers=headers, json=body
+    )
+
+    if resp.status_code == 200:
+        return resp.json()
+    elif resp.status_code in (201, 202):
+        op_id = resp.headers.get("x-ms-operation-id")
+        if op_id:
+            poll_operation(token, api_base, op_id)
+            # Get the result
+            result = requests.get(
+                f"{api_base}/operations/{op_id}/result",
+                headers=headers
+            )
+            if result.status_code == 200:
+                return result.json()
+        # If no op_id or result, try to find the item by name
+        return find_item(token, api_base, workspace_id, display_name, item_type)
+    else:
+        raise RuntimeError(f"Create {item_type} failed ({resp.status_code}): {resp.text}")
+
+
+def find_item(token: str, api_base: str, workspace_id: str,
+              display_name: str, item_type: str) -> Dict:
+    """Find an item by name and type in a workspace."""
+    headers = fabric_headers(token)
+    resp = requests.get(
+        f"{api_base}/workspaces/{workspace_id}/items?type={item_type}",
+        headers=headers
+    )
+    resp.raise_for_status()
+    for item in resp.json().get("value", []):
+        if item["displayName"] == display_name:
+            return item
+    raise RuntimeError(f"{item_type} '{display_name}' not found")
+
+
+def b64encode_json(obj: Any) -> str:
+    """Base64-encode a JSON object for Fabric definition parts."""
+    return base64.b64encode(json.dumps(obj).encode("utf-8")).decode("ascii")
+
+
+def kusto_mgmt(query_service_uri: str, kusto_token: str,
+               db_name: str, command: str) -> Dict:
+    """Execute a Kusto management command."""
+    headers = {
+        "Authorization": f"Bearer {kusto_token}",
+        "Content-Type": "application/json; charset=utf-8",
+    }
+    body = {"db": db_name, "csl": command}
+    resp = requests.post(
+        f"{query_service_uri}/v1/rest/mgmt",
+        headers=headers, json=body
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def print_step(step: int, total: int, msg: str):
+    print(f"\n[{step}/{total}] {msg}")
+    print("-" * 60)

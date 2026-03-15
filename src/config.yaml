@@ -1,0 +1,104 @@
+# Configuration — Fabric RTI Demo (Real-Time Intelligence)
+# Industrial IoT Sensor Monitoring
+
+# Fabric
+workspace_name: "CDR - Fabric RTI Demo"
+capacity_id: "496a7e48-be58-4da8-9736-4db07711b37c"
+
+# Items
+eventhouse_name: "EH_SensorTelemetry"
+lakehouse_name: "LH_SensorReference"
+eventstream_name: "ES_SensorIngestion"
+
+# API
+fabric_api_base: "https://api.fabric.microsoft.com/v1"
+
+# --- Referential Data (Lakehouse) ---
+
+sites:
+  count: 3
+  names: ["Paris HQ", "Lyon Factory", "Marseille Warehouse"]
+  regions: ["Île-de-France", "Auvergne-Rhône-Alpes", "Provence-Alpes-Côte d'Azur"]
+  countries: ["France", "France", "France"]
+
+zones:
+  per_site: 4
+  types: ["Production", "Storage", "Office", "HVAC"]
+
+sensors:
+  per_zone: 5
+  types:
+    - name: "Temperature"
+      unit: "°C"
+      min_normal: 18.0
+      max_normal: 28.0
+      min_critical: 5.0
+      max_critical: 45.0
+    - name: "Humidity"
+      unit: "%RH"
+      min_normal: 30.0
+      max_normal: 60.0
+      min_critical: 10.0
+      max_critical: 90.0
+    - name: "Pressure"
+      unit: "hPa"
+      min_normal: 990.0
+      max_normal: 1025.0
+      min_critical: 950.0
+      max_critical: 1060.0
+    - name: "CO2"
+      unit: "ppm"
+      min_normal: 400.0
+      max_normal: 1000.0
+      min_critical: 300.0
+      max_critical: 5000.0
+    - name: "Vibration"
+      unit: "mm/s"
+      min_normal: 0.0
+      max_normal: 4.5
+      min_critical: 0.0
+      max_critical: 11.0
+
+# --- Real-Time Data (Eventhouse) ---
+
+streaming:
+  interval_seconds: 2          # One reading every 2s per sensor
+  anomaly_pct: 0.03            # 3% of readings are anomalous
+  batch_size: 60               # Send 60 readings per batch
+  alert_threshold_pct: 0.05    # 5% of anomalies trigger alerts
+
+# --- KQL Tables ---
+
+kql_tables:
+  sensor_reading:
+    name: "SensorReading"
+    columns:
+      - { name: "ReadingId",       type: "string" }
+      - { name: "SensorId",       type: "string" }
+      - { name: "ZoneId",         type: "string" }
+      - { name: "SiteId",         type: "string" }
+      - { name: "Timestamp",      type: "datetime" }
+      - { name: "SensorType",     type: "string" }
+      - { name: "ReadingValue",   type: "real" }
+      - { name: "Unit",           type: "string" }
+      - { name: "IsAnomaly",      type: "bool" }
+      - { name: "QualityFlag",    type: "string" }
+
+  sensor_alert:
+    name: "SensorAlert"
+    columns:
+      - { name: "AlertId",        type: "string" }
+      - { name: "SensorId",       type: "string" }
+      - { name: "ZoneId",         type: "string" }
+      - { name: "SiteId",         type: "string" }
+      - { name: "Timestamp",      type: "datetime" }
+      - { name: "SensorType",     type: "string" }
+      - { name: "AlertType",      type: "string" }
+      - { name: "Severity",       type: "string" }
+      - { name: "ReadingValue",   type: "real" }
+      - { name: "ThresholdValue", type: "real" }
+      - { name: "Message",        type: "string" }
+
+# Output
+output:
+  encoding: "utf-8"

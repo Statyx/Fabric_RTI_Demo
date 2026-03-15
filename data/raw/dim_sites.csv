@@ -1,0 +1,4 @@
+site_id,site_name,region,country,latitude,longitude,is_active
+SITE_001,Paris HQ,Île-de-France,France,43.3,2.3,true
+SITE_002,Lyon Factory,Auvergne-Rhône-Alpes,France,45.3,3.8,true
+SITE_003,Marseille Warehouse,Provence-Alpes-Côte d'Azur,France,47.3,5.3,true

@@ -1,0 +1,13 @@
+zone_id,zone_name,zone_type,site_id,floor,area_sqm,is_active
+SITE_001_Z01,Production - Paris HQ,Production,SITE_001,1,124,true
+SITE_001_Z02,Storage - Paris HQ,Storage,SITE_001,1,174,true
+SITE_001_Z03,Office - Paris HQ,Office,SITE_001,2,224,true
+SITE_001_Z04,HVAC - Paris HQ,HVAC,SITE_001,2,274,true
+SITE_002_Z01,Production - Lyon Factory,Production,SITE_002,1,136,true
+SITE_002_Z02,Storage - Lyon Factory,Storage,SITE_002,1,186,true
+SITE_002_Z03,Office - Lyon Factory,Office,SITE_002,2,236,true
+SITE_002_Z04,HVAC - Lyon Factory,HVAC,SITE_002,2,286,true
+SITE_003_Z01,Production - Marseille Warehouse,Production,SITE_003,1,157,true
+SITE_003_Z02,Storage - Marseille Warehouse,Storage,SITE_003,1,207,true
+SITE_003_Z03,Office - Marseille Warehouse,Office,SITE_003,2,257,true
+SITE_003_Z04,HVAC - Marseille Warehouse,HVAC,SITE_003,2,307,true
