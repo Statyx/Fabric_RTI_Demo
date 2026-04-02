@@ -6,18 +6,13 @@ Produces: dim_sites.csv, dim_zones.csv, dim_sensors.csv
 
 import csv
 import uuid
-import yaml
 from pathlib import Path
 from typing import Dict, List, Any
 
+from helpers import load_config
+
 SCRIPT_DIR = Path(__file__).parent
-CONFIG_FILE = SCRIPT_DIR / "config.yaml"
 DATA_DIR = SCRIPT_DIR.parent / "data" / "raw"
-
-
-def load_config() -> Dict[str, Any]:
-    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
 
 
 def generate_sites(config: Dict) -> List[Dict]:

@@ -149,4 +149,4 @@ The injector simulates realistic sensor data:
 
 ## Brain Knowledge
 
-This project uses the RTI agent knowledge base at `../Github_Brain/agents/rti-agent/`.
+This project uses the RTI agent knowledge base at `../Github_Brain/agents/rti-kusto-agent/`.
