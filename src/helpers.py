@@ -174,6 +174,25 @@ def kusto_mgmt(query_service_uri: str, kusto_token: str,
     return resp.json()
 
 
+def kusto_streaming_ingest(query_service_uri: str, kusto_token: str,
+                           db_name: str, table_name: str,
+                           csv_payload: str) -> None:
+    """Ingest CSV data via the Kusto streaming ingestion REST API.
+
+    Uses POST /v1/rest/ingest/{db}/{table}?streamFormat=Csv
+    which is more reliable than .ingest inline for larger volumes.
+    """
+    headers = {
+        "Authorization": f"Bearer {kusto_token}",
+        "Content-Type": "text/csv; charset=utf-8",
+    }
+    url = (f"{query_service_uri}/v1/rest/ingest/"
+           f"{db_name}/{table_name}?streamFormat=Csv")
+    resp = requests.post(url, headers=headers, data=csv_payload.encode("utf-8"),
+                         timeout=60)
+    resp.raise_for_status()
+
+
 def print_step(step: int, total: int, msg: str):
     print(f"\n[{step}/{total}] {msg}")
     print("-" * 60)

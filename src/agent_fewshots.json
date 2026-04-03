@@ -1,0 +1,55 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/fewShots/1.0.0/schema.json",
+  "fewShots": [
+    {
+      "id": "fs-total-readings-001",
+      "question": "How many sensor readings do we have?",
+      "query": "EVALUATE ROW(\"Total Readings\", [Total Readings])"
+    },
+    {
+      "id": "fs-anomaly-rate-002",
+      "question": "What is the anomaly rate?",
+      "query": "EVALUATE ROW(\"Anomaly Rate\", [Anomaly Rate], \"Anomaly Count\", [Anomaly Count], \"Total Readings\", [Total Readings])"
+    },
+    {
+      "id": "fs-readings-by-site-003",
+      "question": "Show me the total readings per site",
+      "query": "EVALUATE SUMMARIZECOLUMNS(dim_sites[site_name], \"Total Readings\", [Total Readings], \"Avg Value\", [Avg Reading Value])"
+    },
+    {
+      "id": "fs-alerts-by-severity-004",
+      "question": "How many critical vs warning alerts do we have?",
+      "query": "EVALUATE ROW(\"Critical Alerts\", [Critical Alerts], \"Warning Alerts\", [Warning Alerts], \"Total Alerts\", [Total Alerts])"
+    },
+    {
+      "id": "fs-top5-anomaly-sensors-005",
+      "question": "Which 5 sensors have the most anomalies?",
+      "query": "EVALUATE TOPN(5, ADDCOLUMNS(SUMMARIZE(SensorReading, dim_sensors[sensor_name], dim_sensors[sensor_type]), \"Anomalies\", CALCULATE([Anomaly Count])), [Anomalies], DESC)"
+    },
+    {
+      "id": "fs-anomaly-by-zone-type-006",
+      "question": "What is the anomaly rate per zone type?",
+      "query": "EVALUATE SUMMARIZECOLUMNS(dim_zones[zone_type], \"Anomaly Rate\", [Anomaly Rate], \"Total Readings\", [Total Readings], \"Anomaly Count\", [Anomaly Count])"
+    },
+    {
+      "id": "fs-temperature-avg-by-site-007",
+      "question": "What is the average temperature per site?",
+      "query": "EVALUATE CALCULATETABLE(SUMMARIZECOLUMNS(dim_sites[site_name], \"Avg Temperature\", [Avg Reading Value]), dim_sensors[sensor_type] = \"Temperature\")"
+    },
+    {
+      "id": "fs-alerts-by-site-008",
+      "question": "Which site has the most alerts?",
+      "query": "EVALUATE TOPN(1, ADDCOLUMNS(SUMMARIZE(SensorAlert, dim_sites[site_name]), \"Total Alerts\", CALCULATE([Total Alerts])), [Total Alerts], DESC)"
+    },
+    {
+      "id": "fs-quality-by-sensor-type-009",
+      "question": "What is the data quality rate for each sensor type?",
+      "query": "EVALUATE SUMMARIZECOLUMNS(dim_sensors[sensor_type], \"Good Quality Rate\", [Good Quality Rate], \"Total Readings\", [Total Readings])"
+    },
+    {
+      "id": "fs-critical-alerts-production-010",
+      "question": "How many critical alerts in production zones?",
+      "query": "EVALUATE ROW(\"Critical Alerts in Production\", CALCULATE([Critical Alerts], dim_zones[zone_type] = \"Production\"))"
+    }
+  ]
+}

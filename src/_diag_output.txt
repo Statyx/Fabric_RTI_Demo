@@ -1,0 +1,46 @@
+
+--- SensorReading count: SensorReading | count
+  Columns: ['Count']
+  [4615]
+
+--- SensorAlert count: SensorAlert | count
+  Columns: ['Count']
+  [174]
+
+--- Date range: SensorReading | summarize min(Timestamp), max(Timestamp)
+  Columns: ['min_Timestamp', 'max_Timestamp']
+  ['2025-01-01T00:00:00Z', '2026-04-02T21:26:24.36277Z']
+
+--- By SiteId: SensorReading | summarize count() by SiteId | order by count_ desc
+  Columns: ['SiteId', 'count_']
+  ['SITE_001', 1565]
+  ['SITE_003', 1547]
+  ['SITE_002', 1501]
+  ['SITE-PARIS', 2]
+
+--- By SensorType: SensorReading | summarize count() by SensorType | order by count_ desc
+  Columns: ['SensorType', 'count_']
+  ['Pressure', 941]
+  ['Temperature', 932]
+  ['Humidity', 923]
+  ['CO2', 922]
+  ['Vibration', 897]
+
+--- Alerts by Severity: SensorAlert | summarize count() by Severity
+  Columns: ['Severity', 'count_']
+  ['Warning', 115]
+  ['Critical', 59]
+
+--- Retention policy: .show table SensorReading policy retention
+  Columns: ['PolicyName', 'EntityName', 'Policy', 'ChildEntities', 'EntityType', 'EffectivePolicy']
+  ['RetentionPolicy', '[742d0d2a-79d4-42dc-ba39-3759848cb817].[SensorReading]', 'null', None, 'Table', '{\r\n  "SoftDeletePeriod": "36500.00:00:00",\r\n  "Recoverability": "Disabled"\r\n}']
+
+--- Caching policy: .show table SensorReading policy caching
+  Columns: ['PolicyName', 'EntityName', 'Policy', 'ChildEntities', 'EntityType', 'EffectivePolicy']
+  ['CachingPolicy', '[742d0d2a-79d4-42dc-ba39-3759848cb817].[SensorReading]', 'null', '[\r\n  "ReadingId",\r\n  "SensorId",\r\n  "ZoneId",\r\n  "SiteId",\r\n  "Timestamp",\r\n  "SensorType",\r\n  "ReadingValue",\r\n  "Unit",\r\n  "IsAnomaly",\r\n  "QualityFlag"\r\n]', 'Table', '{\r\n  "DataHotSpan": {\r\n    "Value": "36500.00:00:00"\r\n  },\r\n  "IndexHotSpan": {\r\n    "Value": "36500.00:00:00"\r\n  }\r\n}']
+
+--- Extents: .show table SensorReading extents | summarize count(), sum(RowCount), min(MinCreatedOn), max(MaxCreatedOn)
+  Columns: ['count_', 'sum_RowCount', 'min_MinCreatedOn', 'max_MaxCreatedOn']
+  [53, 2615, '2026-03-15T19:25:54.6803064Z', '2026-04-02T21:24:12.848351Z']
+
+Done.

@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from helpers import (
-    load_config, load_state, get_kusto_token, kusto_mgmt,
+    load_config, load_state, get_kusto_token, kusto_streaming_ingest,
 )
 
 SCRIPT_DIR = Path(__file__).parent
@@ -122,11 +122,28 @@ def generate_alert(reading: Dict, sensor: Dict) -> Dict:
     }
 
 
+def _stream_csv_batched(lines: List[str], query_uri: str, kusto_token: str,
+                        db_name: str, table_name: str, batch_size: int = 200):
+    """Send CSV lines via streaming ingestion in batches with retry."""
+    for i in range(0, len(lines), batch_size):
+        batch = lines[i:i + batch_size]
+        csv_payload = "\n".join(batch)
+        for attempt in range(3):
+            try:
+                kusto_streaming_ingest(query_uri, kusto_token, db_name,
+                                       table_name, csv_payload)
+                break
+            except Exception:
+                if attempt < 2:
+                    time.sleep(2 * (attempt + 1))
+                else:
+                    raise
+
+
 def ingest_batch(readings: List[Dict], alerts: List[Dict],
                  query_uri: str, kusto_token: str, db_name: str):
-    """Ingest a batch of readings and alerts via inline ingestion."""
+    """Ingest a batch of readings and alerts via streaming ingestion API."""
     if readings:
-        # Build CSV lines for SensorReading
         lines = []
         for r in readings:
             lines.append(",".join([
@@ -134,19 +151,12 @@ def ingest_batch(readings: List[Dict], alerts: List[Dict],
                 r["Timestamp"], r["SensorType"], str(r["ReadingValue"]),
                 r["Unit"], r["IsAnomaly"], r["QualityFlag"],
             ]))
-
-        # Batch into groups of 50 (Kusto inline limit ~64KB)
-        batch_size = 50
-        for i in range(0, len(lines), batch_size):
-            batch = lines[i:i + batch_size]
-            inline_data = "\n".join(batch)
-            cmd = f".ingest inline into table SensorReading with (format='csv') <|\n{inline_data}"
-            kusto_mgmt(query_uri, kusto_token, db_name, cmd)
+        _stream_csv_batched(lines, query_uri, kusto_token, db_name,
+                            "SensorReading")
 
     if alerts:
         lines = []
         for a in alerts:
-            # Escape commas in message
             msg = a["Message"].replace('"', '""')
             lines.append(",".join([
                 a["AlertId"], a["SensorId"], a["ZoneId"], a["SiteId"],
@@ -154,13 +164,8 @@ def ingest_batch(readings: List[Dict], alerts: List[Dict],
                 a["Severity"], str(a["ReadingValue"]),
                 str(a["ThresholdValue"]), f'"{msg}"',
             ]))
-
-        batch_size = 50
-        for i in range(0, len(lines), batch_size):
-            batch = lines[i:i + batch_size]
-            inline_data = "\n".join(batch)
-            cmd = f".ingest inline into table SensorAlert with (format='csv') <|\n{inline_data}"
-            kusto_mgmt(query_uri, kusto_token, db_name, cmd)
+        _stream_csv_batched(lines, query_uri, kusto_token, db_name,
+                            "SensorAlert")
 
 
 def run_continuous(sensors: List[Dict], config: dict,
