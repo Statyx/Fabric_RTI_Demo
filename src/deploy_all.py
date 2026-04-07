@@ -10,11 +10,16 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
 STEPS = [
-    ("generate_data.py",       "Generate referential CSV data"),
-    ("deploy_workspace.py",    "Create Fabric workspace"),
-    ("deploy_lakehouse.py",    "Create Lakehouse + upload CSVs"),
-    ("deploy_eventhouse.py",   "Create Eventhouse + KQL tables"),
-    ("deploy_eventstream.py",  "Create EventStream"),
+    ("generate_data.py",          "Generate referential CSV data"),
+    ("deploy_workspace.py",       "Create Fabric workspace"),
+    ("deploy_lakehouse.py",       "Create Lakehouse + upload CSVs"),
+    ("deploy_eventhouse.py",      "Create Eventhouse + KQL tables"),
+    ("deploy_eventstream.py",     "Create EventStream"),
+    ("deploy_materialized_views.py", "Create KQL materialized views (5 pre-aggregations)"),
+    ("deploy_semantic_model.py",  "Deploy Semantic Model (Direct Lake)"),
+    ("deploy_data_agent.py",      "Deploy Data Agent (AI Skill)"),
+    ("deploy_kql_dashboard.py",   "Deploy KQL Dashboard (2 pages, 14 tiles)"),
+    ("deploy_report.py",          "Deploy Power BI Report (2 pages, 13 visuals)"),
 ]
 
 
@@ -46,10 +51,13 @@ def main():
 Next steps:
   1. Open Fabric portal → workspace "CDR - Fabric RTI Demo"
   2. Configure EventStream source (Custom App) + destination (Eventhouse)
-  3. Run the data injector:
+  3. Run Notebook NB_Setup_Lakehouse to convert CSVs → Delta tables
+  4. Run the data injector:
      python inject_data.py --duration 300    # 5 minutes of live data
      python inject_data.py                   # continuous
-  4. Create a Notebook to convert CSVs to Delta tables in the Lakehouse
+  5. Open RTI_SensorDashboard for real-time KQL tiles
+  6. Open RPT_SensorAnalytics for Power BI report
+  7. Chat with SensorAnalytics_Agent in Fabric portal
 """)
 
 
